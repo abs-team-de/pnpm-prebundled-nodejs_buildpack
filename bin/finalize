@@ -52,9 +52,10 @@ else
   # Detect symlinks (pnpm deploy should resolve them all)
   SYMLINK_COUNT=$(find "${BUILD_DIR}/node_modules" -type l 2>/dev/null | wc -l)
   if [ "$SYMLINK_COUNT" -gt 0 ]; then
-    log_warn "Found ${SYMLINK_COUNT} symlinks in node_modules/"
-    log_warn "pnpm deploy should produce a flat node_modules without symlinks."
-    log_warn "This may indicate the bundle was created with 'pnpm install' instead of 'pnpm deploy'."
+    log_error "Found ${SYMLINK_COUNT} symlinks in node_modules/"
+    log_error "pnpm deploy should produce a flat node_modules without symlinks."
+    log_error "This indicates the bundle was created with 'pnpm install' instead of 'pnpm deploy'."
+    ERRORS=$((ERRORS + 1))
   fi
 fi
 

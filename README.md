@@ -2,13 +2,13 @@
 
 A custom Cloud Foundry buildpack for SAP BTP that deploys Node.js applications with pre-bundled dependencies from pnpm monorepos. It provides the Node.js runtime and validates the application structure — but deliberately skips `npm install` / `pnpm install` at staging time.
 
-Designed for teams using `pnpm deploy` to create self-contained, hermetic application bundles from pnpm workspaces. All dependencies are resolved and bundled locally (or in CI), so staging requires zero network access to npm registries.
+Designed for teams using `pnpm deploy` to create self-contained, hermetic application bundles from pnpm workspaces. All dependencies are resolved and bundled locally (or in CI). Node.js and pnpm runtimes are downloaded during staging (and cached), but no `npm install` / `pnpm install` is ever executed — staging requires zero network access to npm registries for dependency resolution.
 
 ## Features
 
-- **Zero install at staging** — no `npm install`, no `pnpm install`, no network access to registries
+- **Zero install at staging** — no `npm install`, no `pnpm install`; Node.js and pnpm runtimes are downloaded (and cached) but no dependency resolution occurs
 - **pnpm workspace aware** — validates the flat `node_modules` structure produced by `pnpm deploy`
-- **Node.js version resolution** — reads `engines.node` from `package.json`, supports semver constraints
+- **Node.js version resolution** — reads `engines.node` from `package.json`; supports exact versions (`20.18.0`), major (`20`), major.minor (`20.18`), `.x` wildcards (`20.x`, `20.18.x`), and prefix operators (`>=20`, `^20.18.0`, `~20.18.0`). Complex ranges (e.g. `>=18 <21`, `18 || 20`) are **not** supported
 - **pnpm version resolution** — reads `packageManager` field from `package.json`
 - **Automatic memory tuning** — sets `--max-old-space-size` to 75% of the container memory limit
 - **Symlink detection** — catches accidental use of `pnpm install` instead of `pnpm deploy`
