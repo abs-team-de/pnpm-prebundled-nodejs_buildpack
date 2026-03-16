@@ -1,0 +1,29 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [1.1.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.0.0...v1.1.0) — 2026-03-16
+
+### Added
+
+- SHA256 checksum verification for Node.js tarball downloads against `SHASUMS256.txt`
+- `SSL_CERT_DIR=/etc/ssl/certs` default for Node.js >= 20 CA store compatibility
+- `WEB_MEMORY=512` and `WEB_CONCURRENCY=1` defaults (parity with official CF nodejs-buildpack)
+
+## [1.0.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/releases/tag/v1.0.0) — 2026-03-16
+
+### Added
+
+- `bin/detect` — matches apps with `package.json` + `node_modules/`
+- `bin/supply` — downloads and caches Node.js and pnpm runtimes
+- `bin/finalize` — validates pre-bundled application structure (no symlinks, dependency smoke test)
+- `bin/release` — provides default start command from `package.json`
+- `lib/utils.sh` — shared logging, `read_package_field`, semver version resolution
+- Automatic memory tuning via `--max-old-space-size` (75% of container memory)
+- `NODE_ENV=production` default via `profile.d`
+- Staging cache for Node.js and pnpm downloads
+- Apache-2.0 license
+- SECURITY.md, CONTRIBUTING.md, issue/PR templates
