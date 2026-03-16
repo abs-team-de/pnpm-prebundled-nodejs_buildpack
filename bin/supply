@@ -17,7 +17,7 @@ source "${BUILDPACK_DIR}/lib/utils.sh"
 
 # ── Determine versions ──────────────────────────────────────────
 
-REQUESTED_NODE=$(read_package_field "${BUILD_DIR}/package.json" "node")
+REQUESTED_NODE=$(read_package_field "${BUILD_DIR}/package.json" "engines.node")
 NODE_VERSION=$(resolve_node_version "${REQUESTED_NODE}")
 
 PACKAGE_MANAGER_FIELD=$(read_package_field "${BUILD_DIR}/package.json" "packageManager")

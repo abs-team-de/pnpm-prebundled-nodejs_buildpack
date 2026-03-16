@@ -60,8 +60,7 @@ fi
 
 # ── Check 3: Start command ─────────────────────────────────────
 
-START_SCRIPT=$(grep -A1 '"start"' "${BUILD_DIR}/package.json" 2>/dev/null \
-  | tail -1 | sed 's/.*: *"\([^"]*\)".*/\1/' || true)
+START_SCRIPT=$(read_package_field "${BUILD_DIR}/package.json" "scripts.start")
 
 HAS_SERVER_JS=false; [ -f "${BUILD_DIR}/server.js" ] && HAS_SERVER_JS=true || true
 HAS_INDEX_JS=false;  [ -f "${BUILD_DIR}/index.js" ]  && HAS_INDEX_JS=true || true
@@ -80,10 +79,9 @@ fi
 # ── Check 4: Smoke test — resolve first dependency ──────────────
 
 if [ -f "${BUILD_DIR}/package.json" ]; then
-  FIRST_DEP=$(grep -A1 '"dependencies"' "${BUILD_DIR}/package.json" 2>/dev/null \
-    | tail -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
+  FIRST_DEP=$(read_first_dependency "${BUILD_DIR}/package.json")
 
-  if [ -n "$FIRST_DEP" ] && [ "$FIRST_DEP" != "dependencies" ]; then
+  if [ -n "$FIRST_DEP" ]; then
     if node -e "require.resolve('${FIRST_DEP}', { paths: ['${BUILD_DIR}/node_modules'] })" 2>/dev/null; then
       log_detail "Dependency smoke test passed (resolved '${FIRST_DEP}')"
     else
