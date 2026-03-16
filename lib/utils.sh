@@ -14,9 +14,9 @@ log_error()  { echo " !!    ${LOG_PREFIX} ERROR: $*"; }
 # Usage: read_package_field "/path/to/package.json" "fieldName"
 read_package_field() {
   local file="$1" field="$2"
-  grep "\"${field}\"" "$file" 2>/dev/null \
-    | head -1 \
-    | sed 's/.*: *"\([^"]*\)".*/\1/'
+  local result
+  result=$(grep "\"${field}\"" "$file" 2>/dev/null | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/' || true)
+  echo "$result"
 }
 
 # ── Version defaults ──

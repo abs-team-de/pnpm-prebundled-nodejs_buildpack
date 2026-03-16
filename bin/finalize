@@ -63,8 +63,8 @@ fi
 START_SCRIPT=$(grep -A1 '"start"' "${BUILD_DIR}/package.json" 2>/dev/null \
   | tail -1 | sed 's/.*: *"\([^"]*\)".*/\1/' || true)
 
-HAS_SERVER_JS=false; [ -f "${BUILD_DIR}/server.js" ] && HAS_SERVER_JS=true
-HAS_INDEX_JS=false;  [ -f "${BUILD_DIR}/index.js" ]  && HAS_INDEX_JS=true
+HAS_SERVER_JS=false; [ -f "${BUILD_DIR}/server.js" ] && HAS_SERVER_JS=true || true
+HAS_INDEX_JS=false;  [ -f "${BUILD_DIR}/index.js" ]  && HAS_INDEX_JS=true || true
 
 if [ -n "$START_SCRIPT" ]; then
   log_detail "Start script: ${START_SCRIPT}"
