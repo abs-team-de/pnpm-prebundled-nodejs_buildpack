@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.1.0...v1.2.0) — 2026-03-16
+
+### Fixed
+
+- Symlink detection in `bin/finalize` now fails staging (`exit 1`) instead of only warning; prevents broken bundles from deploying
+- README: corrected claim that staging requires "no network access" — Node.js and pnpm runtimes are downloaded (and cached) during staging
+- README: documented exact supported `engines.node` patterns and noted that complex semver ranges are not supported
+
+### Added
+
+- SHA1 checksum verification for pnpm tarball downloads against npm registry metadata
+- Bats test suite (`test/`) with 32 tests covering `detect`, `finalize`, `release`, and `lib/utils.sh`
+- GitHub Actions CI workflow (`.github/workflows/ci.yml`)
+
+### Changed
+
+- Symlink detection wording changed from "may indicate" to "indicates" for clarity
+
 ## [1.1.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.0.0...v1.1.0) — 2026-03-16
 
 ### Added

@@ -93,6 +93,31 @@ else
   if [ "$HTTP_CODE" != "200" ]; then
     log_warn "pnpm download failed (HTTP ${HTTP_CODE}) — continuing without pnpm binary"
     rm -f "$PNPM_CACHE"
+  else
+    # Verify SHA1 checksum against npm registry metadata
+    PNPM_META_URL="https://registry.npmjs.org/pnpm/${PNPM_VERSION}"
+    EXPECTED_SHA1=$(curl -sL "$PNPM_META_URL" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(data['dist']['shasum'])
+except (KeyError, TypeError, json.JSONDecodeError):
+    pass
+" 2>/dev/null || true)
+
+    if [ -n "$EXPECTED_SHA1" ]; then
+      ACTUAL_SHA1=$(sha1sum "$PNPM_CACHE" | awk '{print $1}')
+      if [ "$ACTUAL_SHA1" != "$EXPECTED_SHA1" ]; then
+        log_error "SHA1 checksum mismatch for pnpm v${PNPM_VERSION}"
+        log_error "Expected: ${EXPECTED_SHA1}"
+        log_error "Actual:   ${ACTUAL_SHA1}"
+        rm -f "$PNPM_CACHE"
+        exit 1
+      fi
+      log_detail "SHA1 checksum verified"
+    else
+      log_warn "Could not fetch npm registry metadata — skipping pnpm checksum verification"
+    fi
   fi
 fi
 
