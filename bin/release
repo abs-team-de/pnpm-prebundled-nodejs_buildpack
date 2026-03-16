@@ -30,5 +30,5 @@ fi
 cat <<EOF
 ---
 default_process_types:
-  web: ${DEFAULT_WEB}
+  web: "${DEFAULT_WEB}"
 EOF
