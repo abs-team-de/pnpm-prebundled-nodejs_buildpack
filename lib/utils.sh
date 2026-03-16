@@ -10,12 +10,45 @@ log_detail() { echo "       $*"; }
 log_warn()   { echo " !!    ${LOG_PREFIX} WARNING: $*"; }
 log_error()  { echo " !!    ${LOG_PREFIX} ERROR: $*"; }
 
-# ── Read a field from package.json (no jq dependency) ──
-# Usage: read_package_field "/path/to/package.json" "fieldName"
+# ── Read fields from package.json using python3 (available on cflinuxfs4) ──
+# Usage: read_package_field "/path/to/package.json" "dotted.key.path"
+# Examples:
+#   read_package_field pkg.json "name"              → package name
+#   read_package_field pkg.json "engines.node"      → engines.node value
+#   read_package_field pkg.json "packageManager"    → packageManager value
+#   read_package_field pkg.json "scripts.start"     → start script
 read_package_field() {
   local file="$1" field="$2"
   local result
-  result=$(grep "\"${field}\"" "$file" 2>/dev/null | head -1 | sed 's/.*: *"\([^"]*\)".*/\1/' || true)
+  result=$(python3 -c "
+import json, sys
+try:
+    data = json.load(open('${file}'))
+    keys = '${field}'.split('.')
+    val = data
+    for k in keys:
+        val = val[k]
+    print(val)
+except (KeyError, TypeError, FileNotFoundError, json.JSONDecodeError):
+    pass
+" 2>/dev/null || true)
+  echo "$result"
+}
+
+# ── Get first dependency name from package.json ──
+read_first_dependency() {
+  local file="$1"
+  local result
+  result=$(python3 -c "
+import json
+try:
+    data = json.load(open('${file}'))
+    deps = data.get('dependencies', {})
+    if deps:
+        print(next(iter(deps)))
+except (FileNotFoundError, json.JSONDecodeError, StopIteration):
+    pass
+" 2>/dev/null || true)
   echo "$result"
 }
 

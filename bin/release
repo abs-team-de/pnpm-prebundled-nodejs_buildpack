@@ -8,11 +8,13 @@
 
 BUILD_DIR="$1"
 
+BUILDPACK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "${BUILDPACK_DIR}/lib/utils.sh"
+
 # Try to extract the start script from package.json
 START_CMD=""
 if [ -f "${BUILD_DIR}/package.json" ]; then
-  START_CMD=$(grep -A1 '"start"' "${BUILD_DIR}/package.json" 2>/dev/null \
-    | tail -1 | sed 's/.*: *"\([^"]*\)".*/\1/' || true)
+  START_CMD=$(read_package_field "${BUILD_DIR}/package.json" "scripts.start")
 fi
 
 if [ -n "$START_CMD" ]; then
