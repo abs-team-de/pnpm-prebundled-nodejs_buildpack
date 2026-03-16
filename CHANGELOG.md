@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.2.1...v1.3.0) — 2026-03-16
+
+### Fixed
+
+- `resolve_node_version` now rejects unsupported `engines.node` range expressions (`>=18 <21`, `18 || 20`, `18 - 20`, `*`) with a clear error instead of silently producing an incorrect version
+- `bin/release` YAML output now JSON-escapes the start command to handle quotes, backslashes, and shell fragments safely
+
+### Changed
+
+- README: updated usage example from `#v1.0.0` to `#v1.2.1`
+
 ## [1.2.1](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.2.0...v1.2.1) — 2026-03-16
 
 ### Fixed

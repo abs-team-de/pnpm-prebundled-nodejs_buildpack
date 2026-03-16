@@ -56,3 +56,12 @@ teardown() {
   [[ "$output" == *"default_process_types:"* ]]
   [[ "$output" == *"web:"* ]]
 }
+
+@test "release: escapes quotes in start command" {
+  create_package_json "$BUILD_DIR" '{"name":"test","version":"1.0.0","scripts":{"start":"node -e \"console.log(1)\""}}'
+
+  run "${BUILDPACK_DIR}/bin/release" "$BUILD_DIR"
+  [ "$status" -eq 0 ]
+  # The JSON-escaped value should contain escaped quotes
+  [[ "$output" == *'\"'* ]]
+}
