@@ -54,6 +54,24 @@ else
     rm -f "$NODE_CACHE"
     exit 1
   fi
+
+  # Verify SHA256 checksum
+  SHASUMS_URL="https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt"
+  EXPECTED_SHA=$(curl -sL "$SHASUMS_URL" | grep "node-v${NODE_VERSION}-linux-x64.tar.gz" | awk '{print $1}')
+
+  if [ -n "$EXPECTED_SHA" ]; then
+    ACTUAL_SHA=$(sha256sum "$NODE_CACHE" | awk '{print $1}')
+    if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+      log_error "SHA256 checksum mismatch for Node.js v${NODE_VERSION}"
+      log_error "Expected: ${EXPECTED_SHA}"
+      log_error "Actual:   ${ACTUAL_SHA}"
+      rm -f "$NODE_CACHE"
+      exit 1
+    fi
+    log_detail "SHA256 checksum verified"
+  else
+    log_warn "Could not fetch SHASUMS256.txt — skipping checksum verification"
+  fi
 fi
 
 mkdir -p "$NODE_INSTALL_DIR"
@@ -100,6 +118,13 @@ if [ -n "${MEMORY_LIMIT:-}" ]; then
 fi
 
 export NODE_ENV="${NODE_ENV:-production}"
+
+# Web process defaults (used by @sap/cds, express clustering, etc.)
+export WEB_MEMORY="${WEB_MEMORY:-512}"
+export WEB_CONCURRENCY="${WEB_CONCURRENCY:-1}"
+
+# SSL/TLS: ensure Node.js >= 20 finds system CA certificates
+export SSL_CERT_DIR="${SSL_CERT_DIR:-/etc/ssl/certs}"
 PROFILE
 
 # Replace placeholders with actual DEPS_IDX (profile.d scripts
