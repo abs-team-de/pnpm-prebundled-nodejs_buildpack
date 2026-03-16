@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# ================================================================
+# pnpm-prebundled-nodejs_buildpack — release
+#
+# Provides default process types to Cloud Foundry.
+# The "command" in mta.yaml takes precedence over this.
+# ================================================================
+
+BUILD_DIR="$1"
+
+# Try to extract the start script from package.json
+START_CMD=""
+if [ -f "${BUILD_DIR}/package.json" ]; then
+  START_CMD=$(grep -A1 '"start"' "${BUILD_DIR}/package.json" 2>/dev/null \
+    | tail -1 | sed 's/.*: *"\([^"]*\)".*/\1/' || true)
+fi
+
+if [ -n "$START_CMD" ]; then
+  DEFAULT_WEB="$START_CMD"
+elif [ -f "${BUILD_DIR}/server.js" ]; then
+  DEFAULT_WEB="node server.js"
+elif [ -f "${BUILD_DIR}/index.js" ]; then
+  DEFAULT_WEB="node index.js"
+else
+  DEFAULT_WEB="node server.js"
+fi
+
+cat <<EOF
+---
+default_process_types:
+  web: ${DEFAULT_WEB}
+EOF
