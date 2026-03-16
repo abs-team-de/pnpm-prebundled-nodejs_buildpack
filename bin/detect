@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# ================================================================
+# pnpm-prebundled-nodejs_buildpack — detect
+#
+# Matches if BOTH package.json AND node_modules exist.
+# This prevents accidental use when dependencies aren't bundled.
+# ================================================================
+set -euo pipefail
+
+BUILD_DIR="$1"
+
+if [ -f "${BUILD_DIR}/package.json" ] && [ -d "${BUILD_DIR}/node_modules" ]; then
+  echo "pnpm-prebundled"
+  exit 0
+fi
+
+if [ -f "${BUILD_DIR}/package.json" ]; then
+  echo "node_modules missing — run 'pnpm deploy' first" >&2
+fi
+
+exit 1

@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# ================================================================
+# pnpm-prebundled-nodejs_buildpack — finalize
+#
+# Validates the pre-bundled application structure.
+# Explicitly does NOT run pnpm install or npm install.
+# ================================================================
+set -euo pipefail
+
+BUILD_DIR="$1"
+CACHE_DIR="$2"
+DEPS_DIR="$3"
+DEPS_IDX="$4"
+
+BUILDPACK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+source "${BUILDPACK_DIR}/lib/utils.sh"
+
+# Ensure node is on PATH from supply phase
+export PATH="${DEPS_DIR}/${DEPS_IDX}/node/bin:${DEPS_DIR}/${DEPS_IDX}/bin:${PATH}"
+
+log_info "Finalize phase starting"
+log_info "Validating pre-bundled application structure..."
+
+ERRORS=0
+
+# ── Check 1: package.json ───────────────────────────────────────
+
+if [ ! -f "${BUILD_DIR}/package.json" ]; then
+  log_error "package.json not found"
+  ERRORS=$((ERRORS + 1))
+else
+  APP_NAME=$(read_package_field "${BUILD_DIR}/package.json" "name")
+  log_detail "App name: ${APP_NAME:-unknown}"
+fi
+
+# ── Check 2: node_modules ──────────────────────────────────────
+
+if [ ! -d "${BUILD_DIR}/node_modules" ]; then
+  log_error "node_modules/ directory not found!"
+  log_error "This buildpack requires pre-bundled dependencies."
+  log_error "Run 'pnpm deploy --prod <target>' locally before packaging."
+  ERRORS=$((ERRORS + 1))
+else
+  DEP_COUNT=$(find "${BUILD_DIR}/node_modules" -maxdepth 1 -mindepth 1 -type d | wc -l)
+  log_detail "node_modules: ${DEP_COUNT} top-level packages"
+
+  if [ "$DEP_COUNT" -lt 1 ]; then
+    log_warn "node_modules exists but appears empty!"
+    ERRORS=$((ERRORS + 1))
+  fi
+
+  # Detect symlinks (pnpm deploy should resolve them all)
+  SYMLINK_COUNT=$(find "${BUILD_DIR}/node_modules" -type l 2>/dev/null | wc -l)
+  if [ "$SYMLINK_COUNT" -gt 0 ]; then
+    log_warn "Found ${SYMLINK_COUNT} symlinks in node_modules/"
+    log_warn "pnpm deploy should produce a flat node_modules without symlinks."
+    log_warn "This may indicate the bundle was created with 'pnpm install' instead of 'pnpm deploy'."
+  fi
+fi
+
+# ── Check 3: Start command ─────────────────────────────────────
+
+START_SCRIPT=$(grep -A1 '"start"' "${BUILD_DIR}/package.json" 2>/dev/null \
+  | tail -1 | sed 's/.*: *"\([^"]*\)".*/\1/' || true)
+
+HAS_SERVER_JS=false; [ -f "${BUILD_DIR}/server.js" ] && HAS_SERVER_JS=true
+HAS_INDEX_JS=false;  [ -f "${BUILD_DIR}/index.js" ]  && HAS_INDEX_JS=true
+
+if [ -n "$START_SCRIPT" ]; then
+  log_detail "Start script: ${START_SCRIPT}"
+elif [ "$HAS_SERVER_JS" = true ]; then
+  log_detail "No start script found; will use server.js"
+elif [ "$HAS_INDEX_JS" = true ]; then
+  log_detail "No start script found; will use index.js"
+else
+  log_warn "No start script in package.json, and no server.js or index.js found"
+  log_warn "Set 'command' in your mta.yaml parameters"
+fi
+
+# ── Check 4: Smoke test — resolve first dependency ──────────────
+
+if [ -f "${BUILD_DIR}/package.json" ]; then
+  FIRST_DEP=$(grep -A1 '"dependencies"' "${BUILD_DIR}/package.json" 2>/dev/null \
+    | tail -1 | sed 's/.*"\([^"]*\)".*/\1/' || true)
+
+  if [ -n "$FIRST_DEP" ] && [ "$FIRST_DEP" != "dependencies" ]; then
+    if node -e "require.resolve('${FIRST_DEP}', { paths: ['${BUILD_DIR}/node_modules'] })" 2>/dev/null; then
+      log_detail "Dependency smoke test passed (resolved '${FIRST_DEP}')"
+    else
+      log_warn "Could not resolve '${FIRST_DEP}' — node_modules may be incomplete"
+    fi
+  fi
+fi
+
+# ── Fix permissions ─────────────────────────────────────────────
+
+log_info "Setting file permissions..."
+chmod -R +r "${BUILD_DIR}/node_modules"
+find "${BUILD_DIR}/node_modules/.bin" -type f -exec chmod +x {} + 2>/dev/null || true
+
+# ── Final verdict ───────────────────────────────────────────────
+
+if [ "$ERRORS" -gt 0 ]; then
+  log_error "Validation failed with ${ERRORS} error(s)"
+  log_error ""
+  log_error "Expected workflow:"
+  log_error "  1. pnpm deploy --filter=<app> --prod ./deploy/<app>"
+  log_error "  2. Package ./deploy/<app> into your MTAR"
+  log_error "  3. MTAR must contain package.json + node_modules/ (no symlinks)"
+  exit 1
+fi
+
+log_info "Validation passed — application is ready"
+log_info "No pnpm install executed. Pre-bundled dependencies will be used as-is."
