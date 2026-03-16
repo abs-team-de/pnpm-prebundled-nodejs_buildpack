@@ -57,7 +57,7 @@ else
 
   # Verify SHA256 checksum
   SHASUMS_URL="https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt"
-  EXPECTED_SHA=$(curl -sL "$SHASUMS_URL" | grep "node-v${NODE_VERSION}-linux-x64.tar.gz" | awk '{print $1}')
+  EXPECTED_SHA=$(curl -sL "$SHASUMS_URL" | grep "node-v${NODE_VERSION}-linux-x64.tar.gz" | awk '{print $1}' || true)
 
   if [ -n "$EXPECTED_SHA" ]; then
     ACTUAL_SHA=$(sha256sum "$NODE_CACHE" | awk '{print $1}')
