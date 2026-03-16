@@ -18,7 +18,13 @@ source "${BUILDPACK_DIR}/lib/utils.sh"
 # ── Determine versions ──────────────────────────────────────────
 
 REQUESTED_NODE=$(read_package_field "${BUILD_DIR}/package.json" "engines.node")
-NODE_VERSION=$(resolve_node_version "${REQUESTED_NODE}")
+NODE_VERSION=$(resolve_node_version "${REQUESTED_NODE}" || true)
+
+if [ -n "${RESOLVE_ERROR:-}" ]; then
+  log_error "$RESOLVE_ERROR"
+  log_error "Set an exact version in engines.node or use NODE_OVERRIDE_VERSION."
+  exit 1
+fi
 
 PACKAGE_MANAGER_FIELD=$(read_package_field "${BUILD_DIR}/package.json" "packageManager")
 if echo "$PACKAGE_MANAGER_FIELD" | grep -q "pnpm@"; then

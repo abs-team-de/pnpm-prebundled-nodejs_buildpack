@@ -27,8 +27,13 @@ else
   DEFAULT_WEB="node server.js"
 fi
 
+ESCAPED_WEB=$(python3 -c '
+import json, sys
+print(json.dumps(sys.argv[1]))
+' "$DEFAULT_WEB")
+
 cat <<EOF
 ---
 default_process_types:
-  web: "${DEFAULT_WEB}"
+  web: ${ESCAPED_WEB}
 EOF

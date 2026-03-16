@@ -56,10 +56,32 @@ except (FileNotFoundError, json.JSONDecodeError, StopIteration):
 NODE_DEFAULT_VERSION="20.18.0"
 PNPM_DEFAULT_VERSION="9.15.4"
 
-# ── Resolve a semver-like constraint to a downloadable version ──
-# Supports: "20", "20.x", "20.18.x", ">=20", "^20.18.0", "~20.18.0", exact "20.18.0"
+# ── Resolve a simple version constraint to a downloadable version ──
+#
+# Supported formats:
+#   exact:    "20.18.0"
+#   major:    "20"
+#   minor:    "20.18"
+#   wildcard: "20.x", "20.18.x"
+#   prefix:   ">=20.18.0", "^20.18.0", "~20.18.0", ">=20"
+#
+# NOT supported (returns error via RESOLVE_ERROR):
+#   ranges:   ">=18 <21", "18 || 20", "18 - 20"
+#   star:     "*"
 resolve_node_version() {
   local requested="$1"
+  RESOLVE_ERROR=""
+
+  if [ -z "$requested" ]; then
+    echo "$NODE_DEFAULT_VERSION"
+    return
+  fi
+
+  # Reject unsupported range expressions: spaces, ||, hyphen ranges, lone *
+  if echo "$requested" | grep -qE '(\s|[|]{2}|[0-9]+\s*-\s*[0-9]+|^\*$)'; then
+    RESOLVE_ERROR="Unsupported engines.node constraint: '${requested}'. Only exact versions (20.18.0), major (20), major.minor (20.18), wildcards (20.x), and single prefix operators (>=20, ^20.18.0, ~20.18.0) are supported."
+    return 1
+  fi
 
   # Strip leading semver operators and trailing .x
   local cleaned
@@ -68,6 +90,12 @@ resolve_node_version() {
   if [ -z "$cleaned" ]; then
     echo "$NODE_DEFAULT_VERSION"
     return
+  fi
+
+  # Reject if cleaned value contains non-version characters
+  if ! echo "$cleaned" | grep -qE '^[0-9]+(\.[0-9]+){0,2}$'; then
+    RESOLVE_ERROR="Unsupported engines.node constraint: '${requested}'. Could not extract a valid version number."
+    return 1
   fi
 
   local dots
@@ -90,7 +118,8 @@ resolve_node_version() {
       echo "$cleaned"
       ;;
     *)
-      echo "$NODE_DEFAULT_VERSION"
+      RESOLVE_ERROR="Unsupported engines.node constraint: '${requested}'. Could not extract a valid version number."
+      return 1
       ;;
   esac
 }

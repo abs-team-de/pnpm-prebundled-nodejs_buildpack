@@ -65,6 +65,26 @@ teardown() {
   [ "$output" = "20.18.0" ]
 }
 
+@test "resolve_node_version: rejects range with space (>=20 <21)" {
+  run resolve_node_version ">=20 <21"
+  [ "$status" -eq 1 ]
+}
+
+@test "resolve_node_version: rejects OR range (18 || 20)" {
+  run resolve_node_version "18 || 20"
+  [ "$status" -eq 1 ]
+}
+
+@test "resolve_node_version: rejects hyphen range (18 - 20)" {
+  run resolve_node_version "18 - 20"
+  [ "$status" -eq 1 ]
+}
+
+@test "resolve_node_version: rejects lone star (*)" {
+  run resolve_node_version "*"
+  [ "$status" -eq 1 ]
+}
+
 # ── read_package_field ───────────────────────────────────────────
 
 @test "read_package_field: reads top-level field" {
