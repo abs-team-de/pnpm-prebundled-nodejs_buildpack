@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.1](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.3.0...v1.3.1) — 2026-03-16
+
+### Fixed
+
+- `profile.d/000_node.sh`: stop hardcoding staging-time `DEPS_DIR` path — staging and runtime containers use different absolute paths, so the previous `sed` replacement produced a wrong `NODE_HOME` at runtime causing `node: command not found`
+- Use `DEPS_DIR="${DEPS_DIR:-/home/vcap/deps}"` fallback so the profile script resolves correctly even if CF does not export `DEPS_DIR` at runtime
+- Also install profile.d script into `$BUILD_DIR/.profile.d/` (guaranteed to be sourced by the CF launcher) in addition to `$DEPS_DIR/$IDX/profile.d/`
+- Fixed runtime PATH to include `$DEPS_DIR/$IDX/bin` (where the pnpm wrapper lives) instead of `$DEPS_DIR/$IDX/pnpm/bin`
+
 ## [1.3.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.2.1...v1.3.0) — 2026-03-16
 
 ### Fixed
