@@ -68,3 +68,38 @@ teardown() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"appears empty"* ]]
 }
+
+# ── Smoke test ───────────────────────────────────────────────────
+
+@test "finalize: smoke test resolves the first dependency" {
+  command -v node >/dev/null || skip "node not on PATH"
+  create_package_json "$BUILD_DIR"
+  create_node_modules "$BUILD_DIR" express
+
+  run "${BUILDPACK_DIR}/bin/finalize" "$BUILD_DIR" "$CACHE_DIR" "$DEPS_DIR" "$DEPS_IDX"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Dependency smoke test passed (resolved 'express')"* ]]
+}
+
+@test "finalize: smoke test does not evaluate the dependency name as code" {
+  command -v node >/dev/null || skip "node not on PATH"
+  # Spliced into a JS string this would exit 0 before resolving anything
+  create_package_json "$BUILD_DIR" "{\"name\":\"t\",\"dependencies\":{\"x'+process.exit(0)+'\":\"1\"}}"
+  create_node_modules "$BUILD_DIR" express
+
+  run "${BUILDPACK_DIR}/bin/finalize" "$BUILD_DIR" "$CACHE_DIR" "$DEPS_DIR" "$DEPS_IDX"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Could not resolve"* ]]
+  [[ "$output" != *"smoke test passed"* ]]
+}
+
+@test "finalize: smoke test does not parse the dependency name as a node option" {
+  command -v node >/dev/null || skip "node not on PATH"
+  # Without an option terminator node would print its version and exit 0
+  create_package_json "$BUILD_DIR" '{"name":"t","dependencies":{"--version":"1"}}'
+  create_node_modules "$BUILD_DIR" express
+
+  run "${BUILDPACK_DIR}/bin/finalize" "$BUILD_DIR" "$CACHE_DIR" "$DEPS_DIR" "$DEPS_IDX"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Could not resolve '--version'"* ]]
+}

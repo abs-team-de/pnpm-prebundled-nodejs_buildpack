@@ -83,7 +83,10 @@ if [ -f "${BUILD_DIR}/package.json" ]; then
   FIRST_DEP=$(read_first_dependency "${BUILD_DIR}/package.json")
 
   if [ -n "$FIRST_DEP" ]; then
-    if node -e "require.resolve('${FIRST_DEP}', { paths: ['${BUILD_DIR}/node_modules'] })" 2>/dev/null; then
+    # Pass values as arguments: spliced into the script, a quote in a
+    # dependency name would run as code. -- stops node reading them as options.
+    if node -e 'require.resolve(process.argv[1], { paths: [process.argv[2]] })' \
+        -- "$FIRST_DEP" "${BUILD_DIR}/node_modules" 2>/dev/null; then
       log_detail "Dependency smoke test passed (resolved '${FIRST_DEP}')"
     else
       log_warn "Could not resolve '${FIRST_DEP}' — node_modules may be incomplete"
