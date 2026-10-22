@@ -37,22 +37,24 @@ read_first_dependency() {
 # ── Version defaults ──
 NODE_DEFAULT_VERSION="24.22.1"
 PNPM_DEFAULT_VERSION="9.15.4"
+NODE_INDEX_URL="${NODE_INDEX_URL:-https://nodejs.org/dist/index.json}"
 
-# ── Resolve a simple version constraint to a downloadable version ──
+# ── Resolve an engines.node constraint to a downloadable version ──
 #
-# Supported formats:
-#   exact:    "20.18.0"
-#   major:    "20"
-#   minor:    "20.18"
-#   wildcard: "20.x", "20.18.x"
-#   prefix:   ">=20.18.0", "^20.18.0", "~20.18.0", ">=20"
+# Exact versions are used as-is (no network). Everything else resolves to
+# the newest linux-x64 release on nodejs.org that satisfies it, so apps
+# pick up security releases without changing package.json:
+#   major / .x:  "24", "24.x"   → newest 24.*.*
+#   minor / .x:  "24.3", "24.3.x" → newest 24.3.*
+#   caret:       "^24.3.0"      → newest 24.*.* ≥ 24.3.0
+#   tilde:       "~24.3.0"      → newest 24.3.* ≥ 24.3.0
+#   lower bound: ">=20", ">20"  → newest LTS release ≥ 20.0.0
 #
-# NOT supported (returns error via RESOLVE_ERROR):
+# NOT supported (error on stderr, returns 1):
 #   ranges:   ">=18 <21", "18 || 20", "18 - 20"
 #   star:     "*"
 resolve_node_version() {
   local requested="$1"
-  RESOLVE_ERROR=""
 
   if [ -z "$requested" ]; then
     echo "$NODE_DEFAULT_VERSION"
@@ -61,12 +63,13 @@ resolve_node_version() {
 
   # Reject unsupported range expressions: spaces, ||, hyphen ranges, lone *
   if echo "$requested" | grep -qE '(\s|[|]{2}|[0-9]+\s*-\s*[0-9]+|^\*$)'; then
-    RESOLVE_ERROR="Unsupported engines.node constraint: '${requested}'. Only exact versions (20.18.0), major (20), major.minor (20.18), wildcards (20.x), and single prefix operators (>=20, ^20.18.0, ~20.18.0) are supported."
+    log_error "Unsupported engines.node constraint: '${requested}'. Only exact versions (24.22.1), major (24), major.minor (24.22), wildcards (24.x), and single prefix operators (>=24, ^24.22.1, ~24.22.1) are supported." >&2
     return 1
   fi
 
-  # Strip leading semver operators and trailing .x
-  local cleaned
+  # Split into leading semver operator and version (trailing .x stripped)
+  local operator cleaned
+  operator=$(echo "$requested" | sed 's/[0-9].*//')
   cleaned=$(echo "$requested" | sed 's/^[>=^~]*//' | sed 's/\.x//g')
 
   if [ -z "$cleaned" ]; then
@@ -74,34 +77,58 @@ resolve_node_version() {
     return
   fi
 
-  # Reject if cleaned value contains non-version characters
   if ! echo "$cleaned" | grep -qE '^[0-9]+(\.[0-9]+){0,2}$'; then
-    RESOLVE_ERROR="Unsupported engines.node constraint: '${requested}'. Could not extract a valid version number."
+    log_error "Unsupported engines.node constraint: '${requested}'. Could not extract a valid version number." >&2
     return 1
   fi
 
-  local dots
-  dots=$(echo "$cleaned" | tr -cd '.' | wc -c)
+  local parts
+  parts=$(( $(echo "$cleaned" | tr -cd '.' | wc -c) + 1 ))
 
-  case "$dots" in
-    0) # Major only, e.g. "20"
-      local major="${cleaned}"
-      local default_major="${NODE_DEFAULT_VERSION%%.*}"
-      if [ "$major" = "$default_major" ]; then
-        echo "$NODE_DEFAULT_VERSION"
-      else
-        echo "${major}.0.0"
-      fi
-      ;;
-    1) # Major.minor, e.g. "20.18"
-      echo "${cleaned}.0"
-      ;;
-    2) # Exact version, e.g. "20.18.0"
-      echo "$cleaned"
-      ;;
-    *)
-      RESOLVE_ERROR="Unsupported engines.node constraint: '${requested}'. Could not extract a valid version number."
-      return 1
-      ;;
+  case "$operator" in
+    *">"*) operator=">=" ;;
+    *"^"*) operator="^" ;;
+    *"~"*) operator="~" ;;
+    *)     operator="" ;;
   esac
+
+  if [ -z "$operator" ] && [ "$parts" -eq 3 ]; then
+    echo "$cleaned"
+    return
+  fi
+
+  latest_node_version "$requested" "$operator" "$cleaned" "$parts"
+}
+
+# ── Newest nodejs.org linux-x64 release matching operator + version ──
+# Usage: latest_node_version <requested> <operator> <version> <parts>
+latest_node_version() {
+  local requested="$1" operator="$2" version="$3" parts="$4"
+  local index lower resolved
+
+  if ! index=$(curl -sfL "$NODE_INDEX_URL"); then
+    log_error "Could not fetch ${NODE_INDEX_URL} to resolve engines.node '${requested}'." >&2
+    return 1
+  fi
+
+  # "24.3" → [24,3,0]
+  lower=$(echo "${version}.0.0" | cut -d. -f1-3 | jq -R 'split(".") | map(tonumber)')
+
+  resolved=$(echo "$index" | jq -r --arg op "$operator" --argjson low "$lower" --argjson parts "$parts" '
+    [ .[]
+      | select(any(.files[]; . == "linux-x64"))
+      | {v: (.version | ltrimstr("v") | split(".") | map(tonumber)), lts}
+      | select(.v >= $low)
+      | select(
+          if   $op == ">=" then .lts != false
+          elif $op == "^"  then .v[0] == $low[0]
+          elif $op == "~" and $parts >= 2 then .v[0:2] == $low[0:2]
+          else .v[0:$parts] == $low[0:$parts] end)
+    ] | (max_by(.v) // empty) | .v | map(tostring) | join(".")' 2>/dev/null || true)
+
+  if [ -z "$resolved" ]; then
+    log_error "No Node.js release on nodejs.org matches engines.node '${requested}'." >&2
+    return 1
+  fi
+  echo "$resolved"
 }

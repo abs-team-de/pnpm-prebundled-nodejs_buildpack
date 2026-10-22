@@ -25,10 +25,11 @@ fi
 # ── Determine versions ──────────────────────────────────────────
 
 REQUESTED_NODE=$(read_package_field "${BUILD_DIR}/package.json" "engines.node")
-NODE_VERSION=$(resolve_node_version "${REQUESTED_NODE}" || true)
 
-if [ -n "${RESOLVE_ERROR:-}" ]; then
-  log_error "$RESOLVE_ERROR"
+# resolve_node_version prints its own error to stderr
+if [ -n "${NODE_OVERRIDE_VERSION:-}" ]; then
+  NODE_VERSION="$NODE_OVERRIDE_VERSION"
+elif ! NODE_VERSION=$(resolve_node_version "${REQUESTED_NODE}"); then
   log_error "Set an exact version in engines.node or use NODE_OVERRIDE_VERSION."
   exit 1
 fi
@@ -40,8 +41,7 @@ else
   PNPM_VERSION="${PNPM_DEFAULT_VERSION}"
 fi
 
-# Allow env var overrides
-NODE_VERSION="${NODE_OVERRIDE_VERSION:-$NODE_VERSION}"
+# Allow env var override
 PNPM_VERSION="${PNPM_OVERRIDE_VERSION:-$PNPM_VERSION}"
 
 log_info "Supply phase starting"

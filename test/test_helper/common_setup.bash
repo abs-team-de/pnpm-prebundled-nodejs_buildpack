@@ -20,6 +20,9 @@ setup_common() {
   chmod +x "${TEST_TEMP}/stubs/python3"
   export PATH="${TEST_TEMP}/stubs:${PATH}"
 
+  # Resolve engines.node against a trimmed copy of nodejs.org/dist/index.json
+  export NODE_INDEX_URL="file://${BUILDPACK_DIR}/test/fixtures/node-index.json"
+
   # Source shared utilities
   source "${BUILDPACK_DIR}/lib/utils.sh"
 }

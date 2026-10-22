@@ -15,54 +15,74 @@ teardown() {
 
 # ── resolve_node_version ─────────────────────────────────────────
 
-@test "resolve_node_version: exact version passes through" {
+@test "resolve_node_version: exact version passes through without lookup" {
+  NODE_INDEX_URL="file:///nonexistent"
   run resolve_node_version "20.18.0"
+  [ "$status" -eq 0 ]
   [ "$output" = "20.18.0" ]
 }
 
-@test "resolve_node_version: major only resolves to default when matching" {
-  run resolve_node_version "24"
-  [ "$output" = "24.22.1" ]
-}
-
-@test "resolve_node_version: major only resolves to X.0.0 for non-default" {
-  run resolve_node_version "22"
-  [ "$output" = "22.0.0" ]
-}
-
-@test "resolve_node_version: major.minor resolves to X.Y.0" {
-  run resolve_node_version "20.18"
-  [ "$output" = "20.18.0" ]
-}
-
-@test "resolve_node_version: .x wildcard on major" {
-  run resolve_node_version "24.x"
-  [ "$output" = "24.22.1" ]
-}
-
-@test "resolve_node_version: .x wildcard on minor" {
-  run resolve_node_version "20.18.x"
-  [ "$output" = "20.18.0" ]
-}
-
-@test "resolve_node_version: >= prefix stripped" {
-  run resolve_node_version ">=20.18.0"
-  [ "$output" = "20.18.0" ]
-}
-
-@test "resolve_node_version: ^ prefix stripped" {
-  run resolve_node_version "^20.18.0"
-  [ "$output" = "20.18.0" ]
-}
-
-@test "resolve_node_version: ~ prefix stripped" {
-  run resolve_node_version "~20.18.0"
+@test "resolve_node_version: = prefix is an exact version" {
+  run resolve_node_version "=20.18.0"
   [ "$output" = "20.18.0" ]
 }
 
 @test "resolve_node_version: empty string returns default" {
   run resolve_node_version ""
   [ "$output" = "24.22.1" ]
+}
+
+@test "resolve_node_version: major resolves to newest release of that major" {
+  run resolve_node_version "22"
+  [ "$output" = "22.23.4" ]
+}
+
+@test "resolve_node_version: skips releases without a linux-x64 build" {
+  run resolve_node_version "24"
+  [ "$output" = "24.22.1" ]
+}
+
+@test "resolve_node_version: major.minor resolves to newest patch" {
+  run resolve_node_version "20.18"
+  [ "$output" = "20.18.3" ]
+}
+
+@test "resolve_node_version: .x wildcard on major" {
+  run resolve_node_version "22.x"
+  [ "$output" = "22.23.4" ]
+}
+
+@test "resolve_node_version: .x wildcard on minor" {
+  run resolve_node_version "20.18.x"
+  [ "$output" = "20.18.3" ]
+}
+
+@test "resolve_node_version: ^ resolves to newest release of the same major" {
+  run resolve_node_version "^20.18.0"
+  [ "$output" = "20.20.2" ]
+}
+
+@test "resolve_node_version: ~ resolves to newest patch of the same minor" {
+  run resolve_node_version "~20.18.0"
+  [ "$output" = "20.18.3" ]
+}
+
+@test "resolve_node_version: >= resolves to newest LTS release" {
+  run resolve_node_version ">=20.18.0"
+  [ "$output" = "24.22.1" ]
+}
+
+@test "resolve_node_version: fails when nothing matches" {
+  run resolve_node_version "^19"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"No Node.js release"* ]]
+}
+
+@test "resolve_node_version: fails when the release index is unreachable" {
+  NODE_INDEX_URL="file:///nonexistent"
+  run resolve_node_version "24"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Could not fetch"* ]]
 }
 
 @test "resolve_node_version: rejects range with space (>=20 <21)" {

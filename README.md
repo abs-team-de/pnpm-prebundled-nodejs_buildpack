@@ -8,7 +8,7 @@ Designed for teams using `pnpm deploy` to create self-contained, hermetic applic
 
 - **Zero install at staging** — no `npm install`, no `pnpm install`; Node.js and pnpm runtimes are downloaded (and cached) but no dependency resolution occurs
 - **pnpm workspace aware** — validates the flat `node_modules` structure produced by `pnpm deploy`
-- **Node.js version resolution** — reads `engines.node` from `package.json`; supports exact versions (`20.18.0`), major (`20`), major.minor (`20.18`), `.x` wildcards (`20.x`, `20.18.x`), and prefix operators (`>=20`, `^20.18.0`, `~20.18.0`). Complex ranges (e.g. `>=18 <21`, `18 || 20`) are **not** supported
+- **Node.js version resolution** — reads `engines.node` from `package.json`. An exact version (`24.22.1`) is installed as-is. Everything else resolves at staging to the newest matching release listed in [nodejs.org/dist/index.json](https://nodejs.org/dist/index.json), so redeploying picks up Node.js security releases: major (`24`, `24.x`) and caret (`^24.3.0`) → newest `24.*`; major.minor (`24.3`, `24.3.x`) and tilde (`~24.3.0`) → newest `24.3.*`; lower bound (`>=20`) → newest LTS release. Complex ranges (e.g. `>=18 <21`, `18 || 20`) are **not** supported
 - **pnpm version resolution** — reads `packageManager` field from `package.json`
 - **Automatic memory tuning** — sets `--max-old-space-size` to 75% of the container memory limit
 - **Symlink detection** — catches accidental use of `pnpm install` instead of `pnpm deploy`
