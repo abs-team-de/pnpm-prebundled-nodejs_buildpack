@@ -29,7 +29,7 @@ modules:
       commands: []
     parameters:
       buildpacks:
-        - https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack.git#v1.2.1
+        - https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack.git#v1.4.0
       memory: 512M
       disk_quota: 1024M
       command: node src/server.js
