@@ -14,6 +14,15 @@ setup_common() {
   DEPS_IDX="0"
   mkdir -p "$BUILD_DIR" "$CACHE_DIR" "${DEPS_DIR}/${DEPS_IDX}"
 
+  # CF stacks ship no python3 interpreter — shadow it so any use fails here too
+  mkdir -p "${TEST_TEMP}/stubs"
+  printf '#!/bin/sh\necho "python3 is not available on CF stacks" >&2\nexit 127\n' > "${TEST_TEMP}/stubs/python3"
+  chmod +x "${TEST_TEMP}/stubs/python3"
+  export PATH="${TEST_TEMP}/stubs:${PATH}"
+
+  # Resolve engines.node against a trimmed copy of nodejs.org/dist/index.json
+  export NODE_INDEX_URL="file://${BUILDPACK_DIR}/test/fixtures/node-index.json"
+
   # Source shared utilities
   source "${BUILDPACK_DIR}/lib/utils.sh"
 }

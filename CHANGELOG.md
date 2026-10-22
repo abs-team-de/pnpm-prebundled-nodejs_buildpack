@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.3.2...v1.4.0) — 2026-10-22
+
+### Fixed
+
+- Support the cflinuxfs5 stack (Ubuntu 24.04), now the default on SAP BTP Cloud Foundry. `package.json` is read with `jq` instead of `python3`: neither cflinuxfs5 nor current cflinuxfs4 images ship a Python interpreter, so `engines.node`, `packageManager` and `scripts.start` were silently ignored, the default Node.js version was installed, the pnpm checksum check was skipped and `bin/release` returned an empty `web` command
+- `bin/supply` now fails staging with a clear error if `jq` is missing instead of falling back to defaults
+- An unsupported `engines.node` range (e.g. `>=18 <21`) now fails staging with its error message; previously the error was lost in a subshell and staging tried to download `node-v-linux-x64.tar.gz`
+- `NODE_OVERRIDE_VERSION` now skips `engines.node` resolution, so it works around an unsupported range as the error message advises
+
+### Changed
+
+- `engines.node` ranges resolve to the newest matching release on nodejs.org instead of the lowest: `22` installs 22.23.4 instead of 22.0.0, `^24.0.0` installs 24.22.1 instead of 24.0.0, `>=20.18.0` installs the newest LTS instead of 20.18.0. Exact versions are still pinned and need no lookup
+- Default Node.js version is now 24.22.1 (Active LTS, includes the [October 2026 security releases](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)); the previous default 20.18.0 is end-of-life
+- CI runs the test suite inside the cflinuxfs4 and cflinuxfs5 rootfs images
+
 ## [1.3.1](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.3.0...v1.3.1) — 2026-03-16
 
 ### Fixed

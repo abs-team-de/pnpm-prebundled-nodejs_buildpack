@@ -15,13 +15,21 @@ DEPS_IDX="$4"
 BUILDPACK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source "${BUILDPACK_DIR}/lib/utils.sh"
 
+# Without jq every package.json read would silently come back empty
+if ! command -v jq >/dev/null 2>&1; then
+  log_error "jq not found — this buildpack needs jq to read package.json"
+  log_error "Use a stack that ships jq (cflinuxfs4, cflinuxfs5)."
+  exit 1
+fi
+
 # ── Determine versions ──────────────────────────────────────────
 
 REQUESTED_NODE=$(read_package_field "${BUILD_DIR}/package.json" "engines.node")
-NODE_VERSION=$(resolve_node_version "${REQUESTED_NODE}" || true)
 
-if [ -n "${RESOLVE_ERROR:-}" ]; then
-  log_error "$RESOLVE_ERROR"
+# resolve_node_version prints its own error to stderr
+if [ -n "${NODE_OVERRIDE_VERSION:-}" ]; then
+  NODE_VERSION="$NODE_OVERRIDE_VERSION"
+elif ! NODE_VERSION=$(resolve_node_version "${REQUESTED_NODE}"); then
   log_error "Set an exact version in engines.node or use NODE_OVERRIDE_VERSION."
   exit 1
 fi
@@ -33,8 +41,7 @@ else
   PNPM_VERSION="${PNPM_DEFAULT_VERSION}"
 fi
 
-# Allow env var overrides
-NODE_VERSION="${NODE_OVERRIDE_VERSION:-$NODE_VERSION}"
+# Allow env var override
 PNPM_VERSION="${PNPM_OVERRIDE_VERSION:-$PNPM_VERSION}"
 
 log_info "Supply phase starting"
@@ -102,14 +109,7 @@ else
   else
     # Verify SHA1 checksum against npm registry metadata
     PNPM_META_URL="https://registry.npmjs.org/pnpm/${PNPM_VERSION}"
-    EXPECTED_SHA1=$(curl -sL "$PNPM_META_URL" | python3 -c "
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    print(data['dist']['shasum'])
-except (KeyError, TypeError, json.JSONDecodeError):
-    pass
-" 2>/dev/null || true)
+    EXPECTED_SHA1=$(curl -sL "$PNPM_META_URL" | jq -r '.dist.shasum? // empty' 2>/dev/null || true)
 
     if [ -n "$EXPECTED_SHA1" ]; then
       ACTUAL_SHA1=$(sha1sum "$PNPM_CACHE" | awk '{print $1}')

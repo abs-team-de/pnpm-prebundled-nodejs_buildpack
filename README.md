@@ -8,7 +8,7 @@ Designed for teams using `pnpm deploy` to create self-contained, hermetic applic
 
 - **Zero install at staging** — no `npm install`, no `pnpm install`; Node.js and pnpm runtimes are downloaded (and cached) but no dependency resolution occurs
 - **pnpm workspace aware** — validates the flat `node_modules` structure produced by `pnpm deploy`
-- **Node.js version resolution** — reads `engines.node` from `package.json`; supports exact versions (`20.18.0`), major (`20`), major.minor (`20.18`), `.x` wildcards (`20.x`, `20.18.x`), and prefix operators (`>=20`, `^20.18.0`, `~20.18.0`). Complex ranges (e.g. `>=18 <21`, `18 || 20`) are **not** supported
+- **Node.js version resolution** — reads `engines.node` from `package.json`. An exact version (`24.22.1`) is installed as-is. Everything else resolves at staging to the newest matching release listed in [nodejs.org/dist/index.json](https://nodejs.org/dist/index.json), so redeploying picks up Node.js security releases: major (`24`, `24.x`) and caret (`^24.3.0`) → newest `24.*`; major.minor (`24.3`, `24.3.x`) and tilde (`~24.3.0`) → newest `24.3.*`; lower bound (`>=20`) → newest LTS release. Complex ranges (e.g. `>=18 <21`, `18 || 20`) are **not** supported
 - **pnpm version resolution** — reads `packageManager` field from `package.json`
 - **Automatic memory tuning** — sets `--max-old-space-size` to 75% of the container memory limit
 - **Symlink detection** — catches accidental use of `pnpm install` instead of `pnpm deploy`
@@ -29,7 +29,7 @@ modules:
       commands: []
     parameters:
       buildpacks:
-        - https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack.git#v1.2.1
+        - https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack.git#v1.4.0
       memory: 512M
       disk_quota: 1024M
       command: node src/server.js
@@ -63,20 +63,20 @@ deploy/srv/
 
 | Source | Field | Example | Purpose |
 |--------|-------|---------|---------|
-| `package.json` | `engines.node` | `">=20.18.0"` | Node.js version to install |
+| `package.json` | `engines.node` | `">=24.22.1"` | Node.js version to install |
 | `package.json` | `packageManager` | `"pnpm@9.15.4"` | pnpm version to install |
-| Environment | `NODE_OVERRIDE_VERSION` | `20.18.0` | Override Node.js version |
+| Environment | `NODE_OVERRIDE_VERSION` | `24.22.1` | Override Node.js version |
 | Environment | `PNPM_OVERRIDE_VERSION` | `9.15.4` | Override pnpm version |
 
 ## Staging Output
 
 ```
 -----> [pnpm-prebundled] Supply phase starting
-       Node.js version: v20.18.0 (requested: '>=20.18.0')
+       Node.js version: v24.22.1 (requested: '>=24.22.1')
        pnpm version:    v9.15.4
------> [pnpm-prebundled] Downloading Node.js v20.18.0
+-----> [pnpm-prebundled] Downloading Node.js v24.22.1
 -----> [pnpm-prebundled] Supply phase complete
-       node v20.18.0
+       node v24.22.1
 -----> [pnpm-prebundled] Finalize phase starting
 -----> [pnpm-prebundled] Validating pre-bundled application structure...
        App name: @myorg/srv
@@ -114,8 +114,8 @@ needed) and it never runs any package manager install step.
 
 ## Compatibility
 
-- **CF Stack**: cflinuxfs4 (Ubuntu 22.04)
-- **Node.js**: Any version available at nodejs.org/dist (default: 20.18.0)
+- **CF Stack**: cflinuxfs5 (Ubuntu 24.04) and cflinuxfs4 (Ubuntu 22.04); the buildpack needs `bash`, `curl`, `jq`, `tar` and `coreutils` from the stack, not Python
+- **Node.js**: Any version available at nodejs.org/dist (default: 24.22.1)
 - **pnpm**: Any version published to npmjs.org (default: 9.15.4)
 - **SAP BTP**: Tested on SAP BTP Cloud Foundry multi-environment subaccounts
 
