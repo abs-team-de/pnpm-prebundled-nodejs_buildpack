@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.1](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.4.0...v1.4.1) — 2026-10-22
+
+### Fixed
+
+- `bin/finalize`: the dependency smoke test passes the first dependency name to node as an argument instead of splicing it into the script, so a name containing a quote can no longer run as code and report a false pass
+
 ## [1.4.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.3.2...v1.4.0) — 2026-10-22
 
 ### Fixed
