@@ -21,8 +21,8 @@ teardown() {
 }
 
 @test "resolve_node_version: major only resolves to default when matching" {
-  run resolve_node_version "20"
-  [ "$output" = "20.18.0" ]
+  run resolve_node_version "24"
+  [ "$output" = "24.22.1" ]
 }
 
 @test "resolve_node_version: major only resolves to X.0.0 for non-default" {
@@ -36,8 +36,8 @@ teardown() {
 }
 
 @test "resolve_node_version: .x wildcard on major" {
-  run resolve_node_version "20.x"
-  [ "$output" = "20.18.0" ]
+  run resolve_node_version "24.x"
+  [ "$output" = "24.22.1" ]
 }
 
 @test "resolve_node_version: .x wildcard on minor" {
@@ -62,7 +62,7 @@ teardown() {
 
 @test "resolve_node_version: empty string returns default" {
   run resolve_node_version ""
-  [ "$output" = "20.18.0" ]
+  [ "$output" = "24.22.1" ]
 }
 
 @test "resolve_node_version: rejects range with space (>=20 <21)" {
@@ -116,6 +116,18 @@ teardown() {
   [ "$output" = "" ]
 }
 
+@test "read_package_field: returns empty when valid JSON is followed by garbage" {
+  create_package_json "$BUILD_DIR" '{"scripts":{"start":"node app.js"}}junk'
+  run read_package_field "${BUILD_DIR}/package.json" "scripts.start"
+  [ "$output" = "" ]
+}
+
+@test "read_package_field: returns empty for concatenated JSON documents" {
+  create_package_json "$BUILD_DIR" '{"scripts":{"start":"a"}}{"scripts":{"start":"b"}}'
+  run read_package_field "${BUILD_DIR}/package.json" "scripts.start"
+  [ "$output" = "" ]
+}
+
 # ── read_first_dependency ────────────────────────────────────────
 
 @test "read_first_dependency: returns first dependency" {
@@ -132,5 +144,11 @@ teardown() {
 
 @test "read_first_dependency: returns empty for missing file" {
   run read_first_dependency "${BUILD_DIR}/missing.json"
+  [ "$output" = "" ]
+}
+
+@test "read_first_dependency: returns empty when valid JSON is followed by garbage" {
+  create_package_json "$BUILD_DIR" '{"dependencies":{"express":"^4"}}junk'
+  run read_first_dependency "${BUILD_DIR}/package.json"
   [ "$output" = "" ]
 }

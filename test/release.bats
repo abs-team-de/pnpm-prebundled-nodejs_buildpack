@@ -65,3 +65,12 @@ teardown() {
   # The JSON-escaped value should contain escaped quotes
   [[ "$output" == *'\"'* ]]
 }
+
+@test "release: escapes non-ASCII characters in start command" {
+  create_package_json "$BUILD_DIR" '{"name":"test","version":"1.0.0","scripts":{"start":"node x\u0085y.js"}}'
+
+  run "${BUILDPACK_DIR}/bin/release" "$BUILD_DIR"
+  [ "$status" -eq 0 ]
+  # U+0085 must stay escaped, YAML would fold a raw one into a line break
+  [[ "$output" == *'web: "node x\u0085y.js"'* ]]
+}

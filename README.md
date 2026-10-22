@@ -63,20 +63,20 @@ deploy/srv/
 
 | Source | Field | Example | Purpose |
 |--------|-------|---------|---------|
-| `package.json` | `engines.node` | `">=20.18.0"` | Node.js version to install |
+| `package.json` | `engines.node` | `">=24.22.1"` | Node.js version to install |
 | `package.json` | `packageManager` | `"pnpm@9.15.4"` | pnpm version to install |
-| Environment | `NODE_OVERRIDE_VERSION` | `20.18.0` | Override Node.js version |
+| Environment | `NODE_OVERRIDE_VERSION` | `24.22.1` | Override Node.js version |
 | Environment | `PNPM_OVERRIDE_VERSION` | `9.15.4` | Override pnpm version |
 
 ## Staging Output
 
 ```
 -----> [pnpm-prebundled] Supply phase starting
-       Node.js version: v20.18.0 (requested: '>=20.18.0')
+       Node.js version: v24.22.1 (requested: '>=24.22.1')
        pnpm version:    v9.15.4
------> [pnpm-prebundled] Downloading Node.js v20.18.0
+-----> [pnpm-prebundled] Downloading Node.js v24.22.1
 -----> [pnpm-prebundled] Supply phase complete
-       node v20.18.0
+       node v24.22.1
 -----> [pnpm-prebundled] Finalize phase starting
 -----> [pnpm-prebundled] Validating pre-bundled application structure...
        App name: @myorg/srv
@@ -114,8 +114,8 @@ needed) and it never runs any package manager install step.
 
 ## Compatibility
 
-- **CF Stack**: cflinuxfs4 (Ubuntu 22.04)
-- **Node.js**: Any version available at nodejs.org/dist (default: 20.18.0)
+- **CF Stack**: cflinuxfs5 (Ubuntu 24.04) and cflinuxfs4 (Ubuntu 22.04); the buildpack needs `bash`, `curl`, `jq`, `tar` and `coreutils` from the stack, not Python
+- **Node.js**: Any version available at nodejs.org/dist (default: 24.22.1)
 - **pnpm**: Any version published to npmjs.org (default: 9.15.4)
 - **SAP BTP**: Tested on SAP BTP Cloud Foundry multi-environment subaccounts
 

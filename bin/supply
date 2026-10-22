@@ -15,6 +15,13 @@ DEPS_IDX="$4"
 BUILDPACK_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source "${BUILDPACK_DIR}/lib/utils.sh"
 
+# Without jq every package.json read would silently come back empty
+if ! command -v jq >/dev/null 2>&1; then
+  log_error "jq not found — this buildpack needs jq to read package.json"
+  log_error "Use a stack that ships jq (cflinuxfs4, cflinuxfs5)."
+  exit 1
+fi
+
 # ── Determine versions ──────────────────────────────────────────
 
 REQUESTED_NODE=$(read_package_field "${BUILD_DIR}/package.json" "engines.node")
@@ -102,14 +109,7 @@ else
   else
     # Verify SHA1 checksum against npm registry metadata
     PNPM_META_URL="https://registry.npmjs.org/pnpm/${PNPM_VERSION}"
-    EXPECTED_SHA1=$(curl -sL "$PNPM_META_URL" | python3 -c "
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    print(data['dist']['shasum'])
-except (KeyError, TypeError, json.JSONDecodeError):
-    pass
-" 2>/dev/null || true)
+    EXPECTED_SHA1=$(curl -sL "$PNPM_META_URL" | jq -r '.dist.shasum? // empty' 2>/dev/null || true)
 
     if [ -n "$EXPECTED_SHA1" ]; then
       ACTUAL_SHA1=$(sha1sum "$PNPM_CACHE" | awk '{print $1}')

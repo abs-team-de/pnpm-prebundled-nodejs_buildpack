@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Support the cflinuxfs5 stack (Ubuntu 24.04), now the default on SAP BTP Cloud Foundry. `package.json` is read with `jq` instead of `python3`: neither cflinuxfs5 nor current cflinuxfs4 images ship a Python interpreter, so `engines.node`, `packageManager` and `scripts.start` were silently ignored, the default Node.js version was installed, the pnpm checksum check was skipped and `bin/release` returned an empty `web` command
+- `bin/supply` now fails staging with a clear error if `jq` is missing instead of falling back to defaults
+
+### Changed
+
+- Default Node.js version is now 24.22.1 (Active LTS, includes the [October 2026 security releases](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)); the previous default 20.18.0 is end-of-life
+- CI runs the test suite inside the cflinuxfs4 and cflinuxfs5 rootfs images
+
 ## [1.3.1](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.3.0...v1.3.1) — 2026-03-16
 
 ### Fixed
