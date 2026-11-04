@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Fixed
+
+- `engines.node` ranges such as `22`, `22.x`, `>=22` or `^22.10.0` failed staging with "No Node.js release on nodejs.org matches" once nodejs.org listed a prerelease (`v27.0.0-alpha.0.0.0`, 2026-10-29). Prereleases are now skipped
+- A single malformed entry in the nodejs.org index (no `files` list, non-string `version`) no longer fails every `engines.node` range; the entry is skipped
+- An index that cannot be parsed now fails with "Could not parse", and one that is valid JSON but not a list of releases fails with "Unexpected format", instead of the misleading no-match error
+- Version resolution does not need a jq built with regex support
+
 ## [1.4.1](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.4.0...v1.4.1) — 2026-10-22
 
 ### Fixed

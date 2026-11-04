@@ -114,17 +114,34 @@ latest_node_version() {
   # "24.3" → [24,3,0]
   lower=$(echo "${version}.0.0" | cut -d. -f1-3 | jq -R 'split(".") | map(tonumber)')
 
-  resolved=$(echo "$index" | jq -r --arg op "$operator" --argjson low "$lower" --argjson parts "$parts" '
-    [ .[]
-      | select(any(.files[]; . == "linux-x64"))
-      | {v: (.version | ltrimstr("v") | split(".") | map(tonumber)), lts}
+  if ! echo "$index" | jq empty; then
+    log_error "Could not parse ${NODE_INDEX_URL} to resolve engines.node '${requested}'." >&2
+    return 1
+  fi
+
+  # Only plain vX.Y.Z releases count; prereleases (v27.0.0-alpha.0.0.0) are
+  # skipped. Malformed entries (no files array, non-string version) are
+  # skipped too. The digit check avoids regex, which some jq builds lack.
+  if ! resolved=$(echo "$index" | jq -r --arg op "$operator" --argjson low "$lower" --argjson parts "$parts" '
+    if type != "array" then error("index is not a list") else . end
+    | [ .[]
+      | try (
+          select(any(.files[]; . == "linux-x64"))
+          | (.version | ltrimstr("v") | split(".")) as $p
+          | select(($p | length) == 3
+              and all($p[]; length > 0 and (explode | all(. >= 48 and . <= 57))))
+          | {v: ($p | map(tonumber)), lts}
+        )
       | select(.v >= $low)
       | select(
           if   $op == ">=" then .lts != false
           elif $op == "^"  then .v[0] == $low[0]
           elif $op == "~" and $parts >= 2 then .v[0:2] == $low[0:2]
           else .v[0:$parts] == $low[0:$parts] end)
-    ] | (max_by(.v) // empty) | .v | map(tostring) | join(".")' 2>/dev/null || true)
+    ] | (max_by(.v) // empty) | .v | map(tostring) | join(".")'); then
+    log_error "Unexpected format in ${NODE_INDEX_URL} (expected a list of releases) to resolve engines.node '${requested}'." >&2
+    return 1
+  fi
 
   if [ -z "$resolved" ]; then
     log_error "No Node.js release on nodejs.org matches engines.node '${requested}'." >&2
