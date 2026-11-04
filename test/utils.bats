@@ -72,6 +72,64 @@ teardown() {
   [ "$output" = "24.22.1" ]
 }
 
+@test "resolve_node_version: ignores prerelease versions in the index" {
+  run resolve_node_version "22"
+  [ "$status" -eq 0 ]
+  [ "$output" = "22.23.4" ]
+}
+
+@test "resolve_node_version: skips index entries without a files array" {
+  local index="${BATS_TEST_TMPDIR}/index.json"
+  echo '[{"version":"v23.0.0","lts":false},{"version":"v22.1.0","files":["linux-x64"],"lts":"Jod"}]' > "$index"
+  NODE_INDEX_URL="file://${index}"
+  run resolve_node_version "22"
+  [ "$status" -eq 0 ]
+  [ "$output" = "22.1.0" ]
+}
+
+@test "resolve_node_version: skips index entries with a non-string version" {
+  local index="${BATS_TEST_TMPDIR}/index.json"
+  echo '[{"version":null,"files":["linux-x64"],"lts":false},{"version":22,"files":["linux-x64"],"lts":false},{"version":"v22.1.0","files":["linux-x64"],"lts":"Jod"}]' > "$index"
+  NODE_INDEX_URL="file://${index}"
+  run resolve_node_version "22"
+  [ "$status" -eq 0 ]
+  [ "$output" = "22.1.0" ]
+}
+
+@test "resolve_node_version: fails when the release index is not valid JSON" {
+  local bad_index="${BATS_TEST_TMPDIR}/index.json"
+  echo "not json" > "$bad_index"
+  NODE_INDEX_URL="file://${bad_index}"
+  run resolve_node_version "24"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Could not parse"* ]]
+}
+
+@test "resolve_node_version: reports an unexpected format when the index is JSON but not a list" {
+  local bad_index="${BATS_TEST_TMPDIR}/index.json"
+  echo "42" > "$bad_index"
+  NODE_INDEX_URL="file://${bad_index}"
+  run resolve_node_version "24"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Unexpected format"* ]]
+  [[ "$output" != *"Could not parse"* ]]
+}
+
+@test "resolve_node_version: reports an unexpected format when the index is a JSON object" {
+  local bad_index="${BATS_TEST_TMPDIR}/index.json"
+  echo '{"latest":{"version":"v24.1.0","files":["linux-x64"],"lts":"Krypton"}}' > "$bad_index"
+  NODE_INDEX_URL="file://${bad_index}"
+  run resolve_node_version "24"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"Unexpected format"* ]]
+}
+
+@test "resolve_node_version: fails when only a prerelease matches" {
+  run resolve_node_version "22.24"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"No Node.js release"* ]]
+}
+
 @test "resolve_node_version: fails when nothing matches" {
   run resolve_node_version "^19"
   [ "$status" -eq 1 ]
