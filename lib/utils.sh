@@ -35,7 +35,7 @@ read_first_dependency() {
 }
 
 # ── Version defaults ──
-NODE_DEFAULT_VERSION="24.22.1"
+NODE_DEFAULT_VERSION="24.22.3"
 PNPM_DEFAULT_VERSION="9.15.4"
 NODE_INDEX_URL="${NODE_INDEX_URL:-https://nodejs.org/dist/index.json}"
 
