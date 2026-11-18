@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- When nodejs.org cannot be reached for an app without an `engines.node` version, the staging error now names the default Node.js range `24.x` and says that `package.json` sets no `engines.node` version, instead of reporting an `engines.node '24.x'` the app never set. The same applies to a bare operator such as `>=`
+- README: an exact buildpack tag such as `#v1.5.0` pins only the buildpack; a reproducible staging also needs an exact `engines.node`
+
 ## [1.5.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.4.2...v1.5.0) — 2026-11-18
 
 ### Security
