@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.0](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.4.2...v1.5.0) — 2026-11-18
+
+### Security
+
+- Apps without `engines.node` no longer stage Node.js 24.22.1. They now get the newest Node.js 24 release (24.22.3 or later), which includes the [November 2026 security releases](https://nodejs.org/en/blog/vulnerability/november-2026-security-releases). Apps with an `engines.node` range already get the patched release on their next staging
 
 ### Changed
 
@@ -13,13 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Moving major tag `v1`: every release moves it to the new version. Reference `#v1` in `mta.yaml` to get buildpack fixes without a commit per app
-
-## [1.4.3](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.4.2...v1.4.3) — 2026-11-12
-
-### Security
-
-- Default Node.js version is now 24.22.3, which includes the [November 2026 security releases](https://nodejs.org/en/blog/vulnerability/november-2026-security-releases). It applies only to apps without `engines.node`; apps with a range pick up the patched release on their next staging anyway
+- Moving major tag `v1`: every stable release moves it to the newest 1.x version. Reference `#v1` in `mta.yaml` to get buildpack fixes without a commit per app
 
 ## [1.4.2](https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack/compare/v1.4.1...v1.4.2) — 2026-11-04
 
