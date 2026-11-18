@@ -21,9 +21,11 @@ Revisit when: customers stage without access to nodejs.org, or a major jump thro
 
 ## Links
 <!-- relations: supersedes, contradicts, depends-on, refines, relates-to · provenance: EXTRACTED, INFERRED, AMBIGUOUS · see references/recall-and-capture-workflow.md -->
+- relates-to: [default range](apps_without_engines_node_get_the_default_range_24_x_resolved_at_staging_not_a_pinned_version.md) (EXTRACTED)
 
 ---
 
 ## Timeline
 
 - 2026-10-22 | Created: Non-exact engines.node resolves to newest matching nodejs.org release, >=X to newest LTS
+- 2026-11-18 | Linked the default-range decision
