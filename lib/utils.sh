@@ -35,7 +35,9 @@ read_first_dependency() {
 }
 
 # ── Version defaults ──
-NODE_DEFAULT_VERSION="24.22.3"
+# An app without engines.node gets the newest release of this major, so a
+# Node.js security release needs a restage, not a buildpack release.
+NODE_DEFAULT_RANGE="24.x"
 PNPM_DEFAULT_VERSION="9.15.4"
 NODE_INDEX_URL="${NODE_INDEX_URL:-https://nodejs.org/dist/index.json}"
 
@@ -57,7 +59,7 @@ resolve_node_version() {
   local requested="$1"
 
   if [ -z "$requested" ]; then
-    echo "$NODE_DEFAULT_VERSION"
+    resolve_node_version "$NODE_DEFAULT_RANGE"
     return
   fi
 
@@ -73,7 +75,7 @@ resolve_node_version() {
   cleaned=$(echo "$requested" | sed 's/^[>=^~]*//' | sed 's/\.x//g')
 
   if [ -z "$cleaned" ]; then
-    echo "$NODE_DEFAULT_VERSION"
+    resolve_node_version "$NODE_DEFAULT_RANGE"
     return
   fi
 

@@ -29,11 +29,13 @@ modules:
       commands: []
     parameters:
       buildpacks:
-        - https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack.git#v1.4.3
+        - https://github.com/abs-team-de/pnpm-prebundled-nodejs_buildpack.git#v1
       memory: 512M
       disk_quota: 1024M
       command: node src/server.js
 ```
+
+`#v1` follows the newest 1.x release, so buildpack fixes reach your app on its next deploy or restage. Pin an exact tag (`#v1.5.0`) only if you need a reproducible staging.
 
 ## Prerequisites
 
@@ -115,7 +117,7 @@ needed) and it never runs any package manager install step.
 ## Compatibility
 
 - **CF Stack**: cflinuxfs5 (Ubuntu 24.04) and cflinuxfs4 (Ubuntu 22.04); the buildpack needs `bash`, `curl`, `jq`, `tar` and `coreutils` from the stack, not Python
-- **Node.js**: Any version available at nodejs.org/dist (default: 24.22.3)
+- **Node.js**: Any version available at nodejs.org/dist (default: newest `24.x` release)
 - **pnpm**: Any version published to npmjs.org (default: 9.15.4)
 - **SAP BTP**: Tested on SAP BTP Cloud Foundry multi-environment subaccounts
 
